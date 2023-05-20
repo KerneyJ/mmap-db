@@ -2,6 +2,7 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/kprobes.h>
+#include <linux/sched.h>
 #define pr_fmt(fmt) "%s: " fmt, __func__
 
 MODULE_LICENSE("GPL");
@@ -9,7 +10,7 @@ MODULE_AUTHOR("Jamie K");
 MODULE_DESCRIPTION("Simple module");
 MODULE_VERSION("0.1");
 
-static char symbol[KSYM_NAME_LEN] = "kernel_clone";
+static char symbol[KSYM_NAME_LEN] = "swap_readpage";
 module_param_string(symbol, symbol, KSYM_NAME_LEN, 0664);
 
 static struct kprobe kp = {
@@ -17,8 +18,8 @@ static struct kprobe kp = {
 };
 
 static int __kprobes handler_pre(struct kprobe *p, struct pt_regs *regs){
-	pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx\n",
-			p->symbol_name, p->addr, regs->ip, regs->flags);
+	pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
+			p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
 	return 0;
 }
 

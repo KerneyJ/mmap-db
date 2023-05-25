@@ -1,3 +1,7 @@
+/*
+ * FIXME Might not work with multithreaded programs, cause different threads could try to access the socket simultaneously. But if there is some internal lock on the socket then there should be no problem
+ */
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -7,6 +11,7 @@
 #include <linux/netlink.h>
 #include <linux/skbuff.h>
 
+#define MAX_PAYLOAD 256
 #define NETLINK_USER 31
 #define pr_fmt(fmt) "%s: " fmt, __func__
 
@@ -44,13 +49,15 @@ static int __kprobes kpmmap_pre(struct kprobe *p, struct pt_regs *regs){
 }
 
 static void __kprobes kpmmap_post(struct kprobe *p, struct pt_regs *regs, unsigned long flags){
-	//pr_info("<%s> p->addr = 0x%p, flags = 0x%lx\n",
-	//		p->symbol_name, p->addr, regs->flags);
 	struct nlmsghdr *nlh;
 	struct sk_buff *skb_out;
-	char* msg = "someone called mmap";
+	char msg[MAX_PAYLOAD];
 	int res, msg_size;
 
+	if(pid < 0)
+		return;
+
+	snprintf(msg, MAX_PAYLOAD, "<%s>, p->addr = ox%p, flags = 0x%lx, pid = %d\n", p->symbol_name, p->addr, regs->flags, current->pid);
 	msg_size = strlen(msg);
 
 	skb_out = nlmsg_new(msg_size, 0);
@@ -62,32 +69,73 @@ static void __kprobes kpmmap_post(struct kprobe *p, struct pt_regs *regs, unsign
 	nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
 	NETLINK_CB(skb_out).dst_group = 0;
 	strncpy(nlmsg_data(nlh), msg, msg_size);
-
 	res = nlmsg_unicast(socket, skb_out, pid);
 	if(res < 0)
 		printk(KERN_INFO "Error while sending back to user\n");
 }
 
 static int __kprobes kpwrpage_pre(struct kprobe *p, struct pt_regs *regs){
-	pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
-			p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
+//	pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
+//			p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
 	return 0;
 }
 
 static void __kprobes kpwrpage_post(struct kprobe *p, struct pt_regs *regs, unsigned long flags){
-	pr_info("<%s> p->addr = 0x%p, flags = 0x%lx\n",
-			p->symbol_name, p->addr, regs->flags);
+	struct nlmsghdr *nlh;
+	struct sk_buff *skb_out;
+	char msg[MAX_PAYLOAD];
+	int res, msg_size;
+
+	if(pid < 0)
+		return;
+
+	snprintf(msg, MAX_PAYLOAD, "<%s>, p->addr = ox%p, flags = 0x%lx, pid = %d\n", p->symbol_name, p->addr, regs->flags, current->pid);
+	msg_size = strlen(msg);
+
+	skb_out = nlmsg_new(msg_size, 0);
+	if(!skb_out){
+		printk(KERN_ERR "Failed to allocate new skb\n");
+		return;
+	}
+
+	nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
+	NETLINK_CB(skb_out).dst_group = 0;
+	strncpy(nlmsg_data(nlh), msg, msg_size);
+	res = nlmsg_unicast(socket, skb_out, pid);
+	if(res < 0)
+		printk(KERN_INFO "Error while sending back to user\n");
 }
 
 static int __kprobes kprdpage_pre(struct kprobe *p, struct pt_regs *regs){
-	pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
-			p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
+//	pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
+//			p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
 	return 0;
 }
 
 static void __kprobes kprdpage_post(struct kprobe *p, struct pt_regs *regs, unsigned long flags){
-	pr_info("<%s> p->addr = 0x%p, flags = 0x%lx\n",
-			p->symbol_name, p->addr, regs->flags);
+	struct nlmsghdr *nlh;
+	struct sk_buff *skb_out;
+	char msg[MAX_PAYLOAD];
+	int res, msg_size;
+
+	if(pid < 0)
+		return;
+
+	snprintf(msg, MAX_PAYLOAD, "<%s>, p->addr = ox%p, flags = 0x%lx, pid = %d\n", p->symbol_name, p->addr, regs->flags, current->pid);
+	msg_size = strlen(msg);
+
+	skb_out = nlmsg_new(msg_size, 0);
+	if(!skb_out){
+		printk(KERN_ERR "Failed to allocate new skb\n");
+		return;
+	}
+
+	nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
+	NETLINK_CB(skb_out).dst_group = 0;
+	strncpy(nlmsg_data(nlh), msg, msg_size);
+	res = nlmsg_unicast(socket, skb_out, pid);
+	if(res < 0)
+		printk(KERN_INFO "Error while sending back to user\n");
 }
 
 static void register_process(struct sk_buff *skb){

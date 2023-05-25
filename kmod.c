@@ -38,14 +38,34 @@ static struct kprobe kp_rdpage = {
 };
 
 static int __kprobes kpmmap_pre(struct kprobe *p, struct pt_regs *regs){
-	pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
-			p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
+	//pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
+	//		p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
 	return 0;
 }
 
 static void __kprobes kpmmap_post(struct kprobe *p, struct pt_regs *regs, unsigned long flags){
-	pr_info("<%s> p->addr = 0x%p, flags = 0x%lx\n",
-			p->symbol_name, p->addr, regs->flags);
+	//pr_info("<%s> p->addr = 0x%p, flags = 0x%lx\n",
+	//		p->symbol_name, p->addr, regs->flags);
+	struct nlmsghdr *nlh;
+	struct sk_buff *skb_out;
+	char* msg = "someone called mmap";
+	int res, msg_size;
+
+	msg_size = strlen(msg);
+
+	skb_out = nlmsg_new(msg_size, 0);
+	if(!skb_out){
+		printk(KERN_ERR "Failed to allocate new skb\n");
+		return;
+	}
+
+	nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
+	NETLINK_CB(skb_out).dst_group = 0;
+	strncpy(nlmsg_data(nlh), msg, msg_size);
+
+	res = nlmsg_unicast(socket, skb_out, pid);
+	if(res < 0)
+		printk(KERN_INFO "Error while sending back to user\n");
 }
 
 static int __kprobes kpwrpage_pre(struct kprobe *p, struct pt_regs *regs){
@@ -72,7 +92,6 @@ static void __kprobes kprdpage_post(struct kprobe *p, struct pt_regs *regs, unsi
 
 static void register_process(struct sk_buff *skb){
 	struct nlmsghdr *nlh;
-	int pid;
 	struct sk_buff *skb_out;
 	char *msg = "ack";
 	int res, msg_size;
@@ -144,7 +163,6 @@ static void __exit kprobe_exit(void){
 	pr_info("kprobe rdpage %p unregistered\n", kp_rdpage.addr);
 
 	netlink_kernel_release(socket);
-	// TODO release all the other sockets
 }
 
 module_init(kprobe_init);

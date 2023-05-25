@@ -16,13 +16,11 @@ int sock_fd;
 struct msghdr msg;
 
 int main(int argc, char** argv){
-	
 	if(argc < 2){
 		printf("not enough arguments\n");
 		printf("format: ./stalkproc [PID]\n");
 		return -1;
 	}
-
 	
 	sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
 	if(sock_fd < 0)
@@ -61,6 +59,9 @@ int main(int argc, char** argv){
 
 	recvmsg(sock_fd, &msg, 0);
 	printf("Received message payload: %s\n", (char *)NLMSG_DATA(nlh));
-	close(sock_fd);
+	while(1){
+		recvmsg(sock_fd, &msg, 0);
+		printf("Received message pauload: %s\n", (char *)NLMSG_DATA(nlh));
+	}
 }
 

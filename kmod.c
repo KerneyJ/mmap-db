@@ -20,8 +20,9 @@ MODULE_AUTHOR("Jamie K");
 MODULE_DESCRIPTION("Simple module");
 MODULE_VERSION("0.1");
 
-static int pid = -1; // will track up to 10 processeis
-static struct sock *socket = NULL; // registration socket
+static int stalkpid = -1;
+static int pid = -1;
+static struct sock *socket = NULL;
 
 static char sym_mmap[KSYM_NAME_LEN] = "do_mmap";
 static char sym_wrpage[KSYM_NAME_LEN] = "swap_writepage";
@@ -53,6 +54,9 @@ static void __kprobes kpmmap_post(struct kprobe *p, struct pt_regs *regs, unsign
 	struct sk_buff *skb_out;
 	char msg[MAX_PAYLOAD];
 	int res, msg_size;
+
+	if(current->pid != stalkpid)
+		return;
 
 	if(pid < 0)
 		return;
@@ -86,6 +90,9 @@ static void __kprobes kpwrpage_post(struct kprobe *p, struct pt_regs *regs, unsi
 	char msg[MAX_PAYLOAD];
 	int res, msg_size;
 
+	if(current->pid != stalkpid)
+		return;
+
 	if(pid < 0)
 		return;
 
@@ -118,6 +125,9 @@ static void __kprobes kprdpage_post(struct kprobe *p, struct pt_regs *regs, unsi
 	char msg[MAX_PAYLOAD];
 	int res, msg_size;
 
+	if(current->pid != stalkpid)
+		return;
+
 	if(pid < 0)
 		return;
 
@@ -147,9 +157,11 @@ static void register_process(struct sk_buff *skb){
 	msg_size = strlen(msg);
 
 	nlh = (struct nlmsghdr*)skb->data;
-	
-	printk(KERN_INFO "Registration socket received msg payload: %s\n", (char *)nlmsg_data(nlh));
+
+	kstrtoint((char*)nlmsg_data(nlh), 10, &stalkpid);
 	pid = nlh->nlmsg_pid;
+
+	printk(KERN_INFO "Registration socket received msg payload: %d\n", stalkpid);
 
 	skb_out = nlmsg_new(msg_size, 0);
 	if(!skb_out){

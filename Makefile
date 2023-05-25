@@ -5,5 +5,5 @@ all:
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
 
-usrprog:
-	gcc user_prog.c -o user_prog
+stalkproc:
+	gcc stalkproc.c -o stalkproc

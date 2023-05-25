@@ -15,7 +15,15 @@ struct iovec iov;
 int sock_fd;
 struct msghdr msg;
 
-int main(void){
+int main(int argc, char** argv){
+	
+	if(argc < 2){
+		printf("not enough arguments\n");
+		printf("format: ./stalkproc [PID]\n");
+		return -1;
+	}
+
+	
 	sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
 	if(sock_fd < 0)
 		return -1;
@@ -37,7 +45,7 @@ int main(void){
 	nlh->nlmsg_pid = getpid();
 	nlh->nlmsg_flags = 0;
 
-	strcpy(NLMSG_DATA(nlh), "Hello");
+	strcpy(NLMSG_DATA(nlh), argv[1]); // send the pid of the process to stalk
 
 	iov.iov_base = (void *)nlh;
 	iov.iov_len = nlh->nlmsg_len;

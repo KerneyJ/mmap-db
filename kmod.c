@@ -55,7 +55,7 @@ static void __kprobes kpmmap_post(struct kprobe *p, struct pt_regs *regs, unsign
 	char msg[MAX_PAYLOAD];
 	int res, msg_size;
 
-	pr_info("symbol: %s, pid: %d\n", p->symbol_name, current->pid);
+	//pr_info("symbol: %s, pid: %d\n", p->symbol_name, current->pid);
 	if(current->pid != stalkpid)
 		return;
 
@@ -91,7 +91,7 @@ static void __kprobes kpswap_post(struct kprobe *p, struct pt_regs *regs, unsign
 	char msg[MAX_PAYLOAD];
 	int res, msg_size;
 
-	pr_info("symbol: %s, pid: %d\n", p->symbol_name, current->pid);
+	//pr_info("symbol: %s, pid: %d\n", p->symbol_name, current->pid);
 	if(current->pid != stalkpid)
 		return;
 
@@ -127,7 +127,7 @@ static void __kprobes kphmf_post(struct kprobe *p, struct pt_regs *regs, unsigne
 	char msg[MAX_PAYLOAD];
 	int res, msg_size;
 
-	pr_info("symbol: %s, pid: %d\n", p->symbol_name, current->pid);
+	// pr_info("symbol: %s, pid: %d\n", p->symbol_name, current->pid);
 	if(current->pid != stalkpid)
 		return;
 

@@ -3,6 +3,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/mm.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/kprobes.h>
@@ -44,6 +45,16 @@ static struct kprobe kp_hmf = {
 };
 
 static int __kprobes kpmmap_pre(struct kprobe *p, struct pt_regs *regs){
+	//uint64_t* sp = (uint64_t*)regs->sp;
+	//uint64_t* file_file = (uint64_t*)regs->di;
+	uint64_t* ul_addr = (uint64_t*)regs->si;
+	uint64_t ul_len = regs->dx;
+	//uint64_t* ul_prot = (uint64_t*)regs->cx;
+	uint64_t* ul_flags = (uint64_t*)regs->r8;
+	uint64_t* ul_pgoff = (uint64_t*)regs->r9;
+	//uint64_t* ul_populate = (uint64_t*)(sp+1);
+	//uint64_t* listhead_uf = (uint64_t*)(sp);
+	pr_info("mmap address 0x%p, len %li, protectino %p, mmap flags %p, page offset %p", ul_addr, ul_len, ul_flags, ul_pgoff);
 	//pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
 	//		p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
 	return 0;
@@ -80,6 +91,12 @@ static void __kprobes kpmmap_post(struct kprobe *p, struct pt_regs *regs, unsign
 }
 
 static int __kprobes kpswap_pre(struct kprobe *p, struct pt_regs *regs){
+	struct vm_fault* vmf = regs->di;
+	pr_info("swap: pte at time of fault 0x%p, pte 0x%p\n", vmf->orig_pte, vmf->pte);
+	//pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
+	//		p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
+	return 0;
+
 //	pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
 //			p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
 	return 0;
@@ -116,6 +133,11 @@ static void __kprobes kpswap_post(struct kprobe *p, struct pt_regs *regs, unsign
 }
 
 static int __kprobes kphmf_pre(struct kprobe *p, struct pt_regs *regs){
+	uint64_t vma_pointer = (uint64_t)regs->di;
+	uint64_t ul_address = (uint64_t)regs->si;
+	uint64_t ui_flags = (uint64_t)regs->dx;
+	uint64_t ptregs_regs = (uint64_t)regs->cx;
+	pr_info("hmf: faulting address 0x%p, flags 0x%p\n", ul_address, ui_flags);
 	//pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
 	//		p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
 	return 0;

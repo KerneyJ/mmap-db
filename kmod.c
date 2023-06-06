@@ -58,7 +58,8 @@ static int send_msg(char* msg, int stalk){
 
 	if(pid < 0) // check that there is a user to send info to
 		return -1;
-	
+	pr_info("sending: %s", msg);
+	msg_size = strlen(msg);
 	skb_out = nlmsg_new(msg_size, 0);
 	if(!skb_out){
 		printk(KERN_ERR "Failed to allocate new skb\n");

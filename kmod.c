@@ -1,4 +1,5 @@
 /*
+   VG_(printf)(" M %08lx,%lu\n", addr, size);
  * FIXME Might not work with multithreaded programs, cause different threads could try to access the socket simultaneously. But if there is some internal lock on the socket then there should be no problem
  */
 
@@ -78,7 +79,7 @@ static int send_msg(char* msg, int stalk){
 }
 
 static int __kprobes kpmmap_pre(struct kprobe *p, struct pt_regs *regs){
-	ktime_t kt = ktime_get_real();
+	ktime_t kt = ktime_get_boottime();
 	//uint64_t* sp = (uint64_t*)regs->sp;
 	//uint64_t* file_file = (uint64_t*)regs->di;
 	uint64_t ul_addr = regs->si;
@@ -89,7 +90,7 @@ static int __kprobes kpmmap_pre(struct kprobe *p, struct pt_regs *regs){
 	//uint64_t* ul_populate = (uint64_t*)(sp+1);
 	//uint64_t* listhead_uf = (uint64_t*)(sp);
 	char msg[MAX_PAYLOAD];
-	snprintf(msg, MAX_PAYLOAD, "pre_mmap,%lli,%llu,%llu,-1,-1,-,%llu",kt, ul_addr, virt_to_phys(ul_addr), ul_len);
+	snprintf(msg, MAX_PAYLOAD, "pre_mmap,%lli,0x%p,0x%p,0,0,0,%llu",kt, ul_addr, virt_to_phys(ul_addr), ul_len);
 	if(send_msg(msg, 1) < 0)
 		return -1;
 	return 0;
@@ -98,18 +99,18 @@ static int __kprobes kpmmap_pre(struct kprobe *p, struct pt_regs *regs){
 static void __kprobes kpmmap_post(struct kprobe *p, struct pt_regs *regs, unsigned long flags){
 	char msg[MAX_PAYLOAD];
 	unsigned long mapped_addr = regs->ax;
-	ktime_t kt = ktime_get_real();
+	ktime_t kt = ktime_get_boottime();
 
-	snprintf(msg, MAX_PAYLOAD, "post_mmap,%lli,%lu,%llu,-1,-1,-,-1", kt, mapped_addr, virt_to_phys(mapped_addr));
+	snprintf(msg, MAX_PAYLOAD, "post_mmap,%lli,0x%p,0x%p,0,0,0,0", kt, mapped_addr, virt_to_phys(mapped_addr));
 	if(send_msg(msg, 1) < 0)
 		printk(KERN_INFO "Error sending message to userspace");
 }
 
 static int __kprobes kpswap_pre(struct kprobe *p, struct pt_regs *regs){
-	ktime_t kt = ktime_get_real();
+	ktime_t kt = ktime_get_boottime();
 	struct vm_fault* vmf = (struct vm_fault*)regs->di;
 	char msg[MAX_PAYLOAD];
-	snprintf(msg, MAX_PAYLOAD, "pre_swap,%lli,-1,-1,%lu,%llu,-,-1",kt,vmf->address,virt_to_phys(vmf->address));
+	snprintf(msg, MAX_PAYLOAD, "pre_swap,%lli,0,0,0x%p,0x%p,0,0",kt,vmf->address,virt_to_phys(vmf->address));
 	if(send_msg(msg, 0) < 0)
 		printk(KERN_INFO "Some error in sending message to userspace");
 
@@ -121,10 +122,10 @@ static int __kprobes kpswap_pre(struct kprobe *p, struct pt_regs *regs){
 }
 
 static void __kprobes kpswap_post(struct kprobe *p, struct pt_regs *regs, unsigned long flags){
-	ktime_t kt = ktime_get_real();
+	ktime_t kt = ktime_get_boottime();
 	char msg[MAX_PAYLOAD];
 	uint64_t vmf_reason = regs->ax;
-	snprintf(msg, MAX_PAYLOAD, "post_swap,%lli,-1,-1,-1,-1,%llu,-1",kt,vmf_reason);
+	snprintf(msg, MAX_PAYLOAD, "post_swap,%lli,0,0,0,0,%llu,0",kt,vmf_reason);
 	if(send_msg(msg, 0) < 0)
 		printk(KERN_INFO "Error in sending message to userspace");
 }
@@ -137,9 +138,9 @@ static int __kprobes kphmf_pre(struct kprobe *p, struct pt_regs *regs){
 	//pr_info("hmf: faulting address 0x%p, flags 0x%p\n", ul_address, ui_flags);
 	//pr_info("<%s> p->addr = 0x%p, ip = %lx, flags = 0x%lx, pid = %d\n",
 	//		p->symbol_name, p->addr, regs->ip, regs->flags, current->pid);
-	ktime_t kt = ktime_get_real();
+	ktime_t kt = ktime_get_boottime();
 	char msg[MAX_PAYLOAD];
-	snprintf(msg, MAX_PAYLOAD, "pre_hmf,%lli,%llu,%llu,-1,-1,-,-1", kt, ul_address, virt_to_phys(ul_address));
+	snprintf(msg, MAX_PAYLOAD, "pre_hmf,%lli,0x%p,0x%p,0,0,0,0", kt, ul_address, virt_to_phys(ul_address));
 	if(send_msg(msg, 1) < 0)
 		printk(KERN_INFO "Error while sending back to user\n");
 
@@ -147,10 +148,10 @@ static int __kprobes kphmf_pre(struct kprobe *p, struct pt_regs *regs){
 }
 
 static void __kprobes kphmf_post(struct kprobe *p, struct pt_regs *regs, unsigned long flags){
-	ktime_t kt = ktime_get_real();
+	ktime_t kt = ktime_get_boottime();
 	char msg[MAX_PAYLOAD];
 	uint64_t vmf_reason = regs->ax;
-	snprintf(msg, MAX_PAYLOAD, "post_hmf,%lli,-1,-1,-1,-1,%llu,-1", kt, vmf_reason);	
+	snprintf(msg, MAX_PAYLOAD, "post_hmf,%lli,0,0,0,0,%llu,0", kt, vmf_reason);
 	if(send_msg(msg, 1) < 0)
 		printk(KERN_INFO "Error while sending back to user\n");
 }

@@ -227,6 +227,7 @@ static int __init kprobe_init(void){
 static void __exit kprobe_exit(void){
 	unregister_kprobe(&kp_mmap);
 	unregister_kprobe(&kp_swap);
+	unregister_kprobe(&kp_hmf);
 	pr_info("kprobe mmap  %p unregistered\n", kp_mmap.addr);
 	pr_info("kprobe wrpage %p unregistered\n", kp_swap.addr);
 	pr_info("kprobe handle_mm_swap %p unregistered\n", kp_hmf.addr);

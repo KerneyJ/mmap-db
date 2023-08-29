@@ -43,7 +43,7 @@ int main(int argc, char** argv){
 	nlh->nlmsg_pid = getpid();
 	nlh->nlmsg_flags = 0;
 
-	strcpy(NLMSG_DATA(nlh), argv[1]); // send the pid of the process to stalk
+	strcpy(NLMSG_DATA(nlh), "init"); // send the pid of the process to stalk
 
 	iov.iov_base = (void *)nlh;
 	iov.iov_len = nlh->nlmsg_len;
@@ -61,7 +61,6 @@ int main(int argc, char** argv){
 	printf("Received message payload: %s\n", (char *)NLMSG_DATA(nlh));
 	while(1){
 		recvmsg(sock_fd, &msg, 0);
-		printf("Received message pauload: %s\n", (char *)NLMSG_DATA(nlh));
+		printf("Received message payload: %s\n", (char *)NLMSG_DATA(nlh));
 	}
 }
-

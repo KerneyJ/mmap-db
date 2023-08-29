@@ -17,7 +17,6 @@
 
 #define MAX_PAYLOAD 256
 #define NETLINK_USER 31
-#define pr_fmt(fmt) "%s: " fmt, __func__
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Jamie K");
@@ -27,10 +26,10 @@ MODULE_VERSION("0.1");
 static struct sock *socket = NULL;
 
 // kpmmap_post
-static char sym_mmap[KSYM_NAME_LEN] = "do_mmap";
-module_param_string(sym_mmap, sym_mmap, KSYM_NAME_LEN, 0664);
-static struct kprobe kp_mmap = {
-	.symbol_name = sym_mmap,
+static char sym_mdtread[KSYM_NAME_LEN] = "mdt_preprw_read";
+module_param_string(sym_mdtread, sym_mdtread, KSYM_NAME_LEN, 0664);
+static struct kprobe kp_mdtread = {
+	.symbol_name = sym_mdtread,
 };
 
 int clientpid = -1;
@@ -63,19 +62,20 @@ static int send_msg(char* msg, int probe){
 	return 0;
 }
 
-static int __kprobes kpmmap_pre(struct kprobe *p, struct pt_regs *regs){
-	char msg[MAX_PAYLOAD];
-	snprintf(msg, MAX_PAYLOAD, "pre_mmap");
-	if(send_msg(msg, 1) < 0)
-		return -1;
+static int __kprobes kpmdtread_pre(struct kprobe *p, struct pt_regs *regs){
+	//char msg[MAX_PAYLOAD];
+	//snprintf(msg, MAX_PAYLOAD, "pre_mmap");
+	printk(KERN_INFO "call to mdtread");
+	//if(send_msg(msg, 1) < 0)
+	//	return -1;
 	return 0;
 }
 
-static void __kprobes kpmmap_post(struct kprobe *p, struct pt_regs *regs, unsigned long flags){
-	char msg[MAX_PAYLOAD];
-	snprintf(msg, MAX_PAYLOAD, "post_mmap");
-	if(send_msg(msg, 1) < 0)
-		printk(KERN_INFO "Error sending message to userspace");
+static void __kprobes kpmdtread_post(struct kprobe *p, struct pt_regs *regs, unsigned long flags){
+	//char msg[MAX_PAYLOAD];
+	//snprintf(msg, MAX_PAYLOAD, "post_mmap");
+	//if(send_msg(msg, 1) < 0)
+	//	printk(KERN_INFO "Error sending message to userspace");
 }
 
 static void register_process(struct sk_buff *skb){
@@ -121,19 +121,19 @@ static int __init kprobe_init(void){
 		return -1;
 	}
 
-	kp_mmap.pre_handler = kpmmap_pre;
-	kp_mmap.post_handler = kpmmap_post;
-	if( (ret = register_kprobe(&kp_mmap)) < 0){
-		pr_err("register kp_mmap failed, returned %d\n", ret);
+	kp_mdtread.pre_handler = kpmdtread_pre;
+	kp_mdtread.post_handler = kpmdtread_post;
+	if( (ret = register_kprobe(&kp_mdtread)) < 0){
+		printk(KERN_ERR "register kp_mdtread failed, returned %d\n", ret);
 		return ret;
 	}
-	pr_info("Planted kprobe mmap at %p\n", kp_mmap.addr);
+	printk(KERN_INFO "Planted kprobe mdtread at %p\n", kp_mdtread.addr);
 	return 0;
 }
 
 static void __exit kprobe_exit(void){
-	unregister_kprobe(&kp_mmap);
-	pr_info("kprobe mmap  %p unregistered\n", kp_mmap.addr);
+	unregister_kprobe(&kp_mdtread);
+	printk(KERN_INFO "kprobe mdtread  %p unregistered\n", kp_mdtread.addr);
 
 	netlink_kernel_release(socket);
 }

@@ -39,13 +39,12 @@ static int send_msg(char* msg, int probe){
 	struct nlmsghdr *nlh;
 	struct sk_buff *skb_out;
 	char res, msg_size;
-	if(probe)
-		return 0;
+	if(!probe)
+		return -1;
 
 	if(clientpid < 0) // check that there is a user to send info to
 		return -1;
 
-	pr_info("sending: %s", msg);
 	msg_size = strlen(msg);
 	skb_out = nlmsg_new(msg_size, 0);
 	if(!skb_out){
@@ -65,21 +64,16 @@ static int send_msg(char* msg, int probe){
 }
 
 static int __kprobes kpmmap_pre(struct kprobe *p, struct pt_regs *regs){
-	//ktime_t kt = ktime_get_boottime();
-	//uint64_t ul_addr = regs->si;
-	//uint64_t ul_len = regs->dx;
 	char msg[MAX_PAYLOAD];
-	snprintf(msg, MAX_PAYLOAD, "pre_mmap"); // ,%lli,0x%p,0x%p,0,0,0,%llu",kt, ul_addr, virt_to_phys(ul_addr), ul_len);
+	snprintf(msg, MAX_PAYLOAD, "pre_mmap");
 	if(send_msg(msg, 1) < 0)
 		return -1;
 	return 0;
 }
 
 static void __kprobes kpmmap_post(struct kprobe *p, struct pt_regs *regs, unsigned long flags){
-	//ktime_t kt = ktime_get_boottime();
-	//unsigned long mapped_addr = regs->ax;
 	char msg[MAX_PAYLOAD];
-	snprintf(msg, MAX_PAYLOAD, "post_mmap"); // ,%lli,0x%p,0x%p,0,0,0,0", kt, mapped_addr, virt_to_phys(mapped_addr));
+	snprintf(msg, MAX_PAYLOAD, "post_mmap");
 	if(send_msg(msg, 1) < 0)
 		printk(KERN_INFO "Error sending message to userspace");
 }

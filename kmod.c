@@ -9,7 +9,7 @@ MODULE_AUTHOR("Jamie K");
 MODULE_DESCRIPTION("Simple module");
 MODULE_VERSION("0.1");
 
-static char symbol[KSYM_NAME_LEN] = "kernel_clone";
+static char symbol[KSYM_NAME_LEN] = "mdd_open";
 module_param_string(symbol, symbol, KSYM_NAME_LEN, 0664);
 
 static struct kprobe kp = {

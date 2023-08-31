@@ -26,7 +26,7 @@ MODULE_VERSION("0.1");
 static struct sock *socket = NULL;
 
 // kpmmap_post
-static char sym_mdtread[KSYM_NAME_LEN] = "mdd_open";
+static char sym_mdtread[KSYM_NAME_LEN] = "kernel_clone";
 module_param_string(sym_mdtread, sym_mdtread, KSYM_NAME_LEN, 0664);
 static struct kprobe kp_mdtread = {
 	.symbol_name = sym_mdtread,
@@ -67,7 +67,7 @@ static int send_msg(char* msg, int probe){
 static int __kprobes kpmdtread_pre(struct kprobe *p, struct pt_regs *regs){
 	//char msg[MAX_PAYLOAD];
 	//snprintf(msg, MAX_PAYLOAD, "pre_mmap");
-	printk(KERN_INFO "call to mdtread");
+	printk(KERN_INFO "pre");
 	//if(send_msg(msg, 1) < 0)
 	//	return -1;
 	return 0;
@@ -78,6 +78,7 @@ static void __kprobes kpmdtread_post(struct kprobe *p, struct pt_regs *regs, uns
 	//snprintf(msg, MAX_PAYLOAD, "post_mmap");
 	//if(send_msg(msg, 1) < 0)
 	//	printk(KERN_INFO "Error sending message to userspace");
+	printk(KERN_INFO "post");
 }
 
 static void register_process(struct sk_buff *skb){

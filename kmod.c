@@ -26,7 +26,7 @@ MODULE_VERSION("0.1");
 static struct sock *socket = NULL;
 
 // kpmmap_post
-static char sym_mdtread[KSYM_NAME_LEN] = "mdt_preprw_read";
+static char sym_mdtread[KSYM_NAME_LEN] = "mdd_open";
 module_param_string(sym_mdtread, sym_mdtread, KSYM_NAME_LEN, 0664);
 static struct kprobe kp_mdtread = {
 	.symbol_name = sym_mdtread,
@@ -41,8 +41,10 @@ static int send_msg(char* msg, int probe){
 	if(!probe)
 		return -1;
 
-	if(clientpid < 0) // check that there is a user to send info to
+	if(clientpid < 0){
+		printk(KERN_ERR "No client to send to");
 		return -1;
+	}
 
 	msg_size = strlen(msg);
 	skb_out = nlmsg_new(msg_size, 0);
@@ -110,16 +112,16 @@ static void register_process(struct sk_buff *skb){
 }
 
 static int __init kprobe_init(void){
-	struct netlink_kernel_cfg cfg = {
-		.input = register_process,
-	};
+	//struct netlink_kernel_cfg cfg = {
+	//	.input = register_process,
+	//};
 	int ret;
 
-	socket = netlink_kernel_create(&init_net, NETLINK_USER, &cfg);
-	if(!socket){
-		printk(KERN_ALERT "Error creating socket.\n");
-		return -1;
-	}
+	//socket = netlink_kernel_create(&init_net, NETLINK_USER, &cfg);
+	//if(!socket){
+	//	printk(KERN_ALERT "Error creating socket.\n");
+	//	return -1;
+	//}
 
 	kp_mdtread.pre_handler = kpmdtread_pre;
 	kp_mdtread.post_handler = kpmdtread_post;
@@ -135,7 +137,7 @@ static void __exit kprobe_exit(void){
 	unregister_kprobe(&kp_mdtread);
 	printk(KERN_INFO "kprobe mdtread  %p unregistered\n", kp_mdtread.addr);
 
-	netlink_kernel_release(socket);
+	//netlink_kernel_release(socket);
 }
 
 module_init(kprobe_init);
